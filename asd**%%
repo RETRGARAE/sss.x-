@@ -1,9 +1,972 @@
-return {
-    "E83C97B2-73E3-4910-AF9B-6CD491B62B6E", -- Replace with actual HWIDs
-    "HWID2", -- Replace with actual HWIDs
-    "HWID3",
-    "HWID4",
-    "HWID5",
-    "HWID6",
-    "HWID7",
+local License = Key
+
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
+local LuaName = "Key"
+
+StarterGui:SetCore("SendNotification", {
+	Title = LuaName,
+	Text = "Wait for Key Check ...",
+	Duration = 5
+})
+
+--* Configuration *--
+local initialized = false
+local sessionid = ""
+
+--* Application Details *--
+local Name = "Key" --* Application Name
+local Ownerid = "Yuy7Ua9Gwb" --* OwnerID
+local APPVersion = "1.0" --* Application Version
+
+local req = game:HttpGet('https://keyauth.win/api/1.1/?name=' .. Name .. '&ownerid=' .. Ownerid .. '&type=init&ver=' .. APPVersion)
+
+if req == "KeyAuth_Invalid" then
+   print("Error: Key Invalid.")
+
+   StarterGui:SetCore("SendNotification", {
+	   Title = LuaName,
+	   Text = "Error: Key Invalid.",
+	   Duration = 3
+   })
+
+   -- Kick only the player running the script if the key is invalid
+   local player = Players.LocalPlayer
+   if player then
+       player:Kick("Authentication failed: Invalid key.")
+   end
+
+   return false
+end
+
+local data = HttpService:JSONDecode(req)
+
+if data.success == true then
+   initialized = true
+   sessionid = data.sessionid
+elseif data.message == "invalidver" then
+   print("Error: Wrong application version.")
+
+   StarterGui:SetCore("SendNotification", {
+	   Title = LuaName,
+	   Text = "Error: Wrong application version.",
+	   Duration = 3
+   })
+
+   -- Kick only the player running the script if the version is invalid
+   local player = Players.LocalPlayer
+   if player then
+       player:Kick("Authentication failed: Wrong application version.")
+   end
+
+   return false
+else
+   print("Error: " .. data.message)
+   return false
+end
+
+print("\n\nLicensing\n")
+local req = game:HttpGet('https://keyauth.win/api/1.1/?name=' .. Name .. '&ownerid=' .. Ownerid .. '&type=license&key=' .. License ..'&ver=' .. APPVersion .. '&sessionid=' .. sessionid)
+local data = HttpService:JSONDecode(req)
+
+if data.success == false then
+    StarterGui:SetCore("SendNotification", {
+	    Title = LuaName,
+	    Text = "Error: " .. data.message,
+	    Duration = 5
+    })
+
+    -- Kick only the player running the script if the license check fails
+    local player = Players.LocalPlayer
+    if player then
+        player:Kick("Authentication failed: " .. data.message)
+    end
+
+    return false
+end
+
+StarterGui:SetCore("SendNotification", {
+	Title = LuaName,
+	Text = "Key Active",
+	Duration = 5
+})
+
+
+
+
+
+--* Your code here *--
+local DepthMode = "AlwaysOnTop"
+local FillTransparency = 0.5
+local OutlineTransparency = 1
+
+local FriendColor = Color3.fromRGB(190, 137, 0)
+local EnemyColor = Color3.fromRGB(255, 0, 0)   
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+local connections = {}
+
+local Storage = Instance.new("Folder")
+Storage.Parent = CoreGui
+Storage.Name = "Highlight_Storage"
+
+
+local highlightEnabled = true 
+
+
+local function GetHighlightColor(plr)
+    if plr.Team == lp.Team then
+        return FriendColor
+    else
+        return EnemyColor
+    end
+end
+
+
+local function Highlight(plr)
+    if not highlightEnabled or plr == lp then return end 
+
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = plr.Name
+    Highlight.FillColor = GetHighlightColor(plr)
+    Highlight.DepthMode = DepthMode
+    Highlight.FillTransparency = FillTransparency
+    Highlight.OutlineColor = GetHighlightColor(plr)
+    Highlight.OutlineTransparency = OutlineTransparency
+    Highlight.Parent = Storage
+
+    local plrchar = plr.Character
+    if plrchar then
+        Highlight.Adornee = plrchar
+    end
+
+    connections[plr] = plr.CharacterAdded:Connect(function(char)
+        Highlight.Adornee = char
+    end)
+
+    plr:GetPropertyChangedSignal("Team"):Connect(function()
+        Highlight.FillColor = GetHighlightColor(plr)
+        Highlight.OutlineColor = GetHighlightColor(plr)
+    end)
+end
+
+
+local function ClearHighlights()
+    for _, child in ipairs(Storage:GetChildren()) do
+        child:Destroy()
+    end
+    for _, conn in pairs(connections) do
+        conn:Disconnect()
+    end
+    connections = {}
+end
+
+
+local function ReloadHighlights()
+    ClearHighlights()
+    if highlightEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            Highlight(player)
+        end
+    end
+end
+
+
+Players.PlayerAdded:Connect(function(plr)
+    if highlightEnabled then
+        Highlight(plr)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    local plrname = plr.Name
+    if Storage:FindFirstChild(plrname) then
+        Storage[plrname]:Destroy()
+    end
+    if connections[plr] then
+        connections[plr]:Disconnect()
+        connections[plr] = nil
+    end
+end)
+
+
+ReloadHighlights()
+
+
+local function ToggleHighlight(state)
+    highlightEnabled = state 
+    ReloadHighlights() 
+end
+
+-- Define required services and objects
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+-- Utility function to create or update a Drawing object
+local function createOrUpdateDrawing(drawing, class, properties)
+    if not drawing then
+        drawing = Drawing.new(class)
+    end
+    for property, value in pairs(properties) do
+        pcall(function()
+            drawing[property] = value
+        end)
+    end
+    return drawing
+end
+
+-- Features and visuals settings
+local features = {
+    visuals = {
+        boxes = {
+            enabled = true,
+            color = Color3.new(255, 255, 255), -- Red color
+            filled = {
+                enabled = true,
+                color = Color3.new(235, 0, 0), -- Red color
+                transparency = 0.25, -- 50% transparency
+            },
+            outline = {
+                enabled = true,
+                color = Color3.fromRGB(76, 3, 54), -- Black color
+            },
+        },
+        names = {
+            enabled = true,
+            color = Color3.new(1, 1, 1), -- White color
+            outline = {
+                enabled = true,
+                color = Color3.new(0, 0, 0), -- Black color
+            },
+        },
+        distance = {
+            enabled = true,
+            color = Color3.new(1, 1, 1), -- White color
+            outline = {
+                enabled = true,
+                color = Color3.new(0, 0, 0), -- Black color
+            },
+        },
+        weapon = {
+            enabled = true,
+            color = Color3.new(1, 1, 1), -- White color
+            outline = {
+                enabled = true,
+                color = Color3.new(0, 0, 0), -- Black color
+            },
+        },
+    }
 }
+
+-- Cache for storing player data
+local playerData = {}
+
+local function getWeaponNameFromSlot1(player)
+    local weaponName = "none"
+    local inventory = player:FindFirstChild("GunInventory")
+    if inventory then
+        local slot1 = inventory:FindFirstChild("Slot1")
+        if slot1 then
+            weaponName = slot1.Value
+        end
+    end
+    return weaponName
+end
+
+-- Function to handle drawing updates
+local function updateDrawings()
+    local visiblePlayers = {} -- Track visible players
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local character = player.Character
+            if character and character:FindFirstChild("WorldCharacter") then
+                local root = character.WorldCharacter:WaitForChild('HumanoidRootPart')
+                local data = playerData[character]
+                local weaponName = getWeaponNameFromSlot1(player)
+
+                -- Initialize player data if not present
+                if not data then
+                    playerData[character] = {
+                        drawings = {
+                            box = nil,
+                            boxFilled = nil,
+                            boxOutline = nil,
+                            name = nil,
+                            distance = nil,
+                            weapon = nil,
+                        },
+                        distance = 0,
+                    }
+                    data = playerData[character]
+                end
+
+                local drawings = data.drawings
+                local position, visible = Camera:WorldToViewportPoint(root.Position)
+                if visible then
+                    local playerPosition = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart").Position or Vector3.new()
+                    local distance = (root.Position - playerPosition).magnitude
+                    data.distance = math.floor(distance)
+
+                    -- Update visual elements
+                    local scale = 1 / (position.Z * math.tan(math.rad(Camera.FieldOfView * 0.5)) * 2) * 1000
+                    local width, height = math.floor(3 * scale), math.floor(5 * scale)
+                    local x, y = math.floor(position.X), math.floor(position.Y)
+                    local xPosition, yPosition = math.floor(x - width * 0.5), math.floor((y - height * 0.5) + (0.5 * scale))
+
+                    -- Box visuals
+                    if features.visuals.boxes.enabled then
+                        -- Update outline box
+                        if features.visuals.boxes.outline.enabled then
+                            drawings.boxOutline = createOrUpdateDrawing(drawings.boxOutline, "Square", {
+                                Size = Vector2.new(width + 2, height + 2), -- Make outline slightly bigger
+                                Position = Vector2.new(xPosition - 1, yPosition - 1),
+                                Color = features.visuals.boxes.outline.color,
+                                Visible = true,
+                                Thickness = 1 -- Set outline thickness
+                            })
+                        end
+
+                        -- Update filled box
+                        if features.visuals.boxes.filled.enabled then
+                            drawings.boxFilled = createOrUpdateDrawing(drawings.boxFilled, "Square", {
+                                Size = Vector2.new(width, height),
+                                Position = Vector2.new(xPosition, yPosition),
+                                Color = features.visuals.boxes.filled.color,
+                                Transparency = features.visuals.boxes.filled.transparency,
+                                Filled = true, -- Ensure it's a filled box
+                                Visible = true,
+                            })
+                        end
+
+                        -- Update main box (if needed, or use filled as main box)
+                        drawings.box = createOrUpdateDrawing(drawings.box, "Square", {
+                            Size = Vector2.new(width, height),
+                            Position = Vector2.new(xPosition, yPosition),
+                            Color = features.visuals.boxes.color,
+                            Visible = true,
+                            Thickness = 1, -- Thin border for the main box
+                        })
+                    end
+
+                    -- Name visuals
+                    if features.visuals.names.enabled then
+                        drawings.name = createOrUpdateDrawing(drawings.name, "Text", {
+                            Text = "" .. player.Name .. "",
+                            Size = math.max(math.min(math.abs(12.5 * scale), 12.5), 10),
+                            Color = features.visuals.names.color,
+                            Outline = features.visuals.names.outline.enabled,
+                            OutlineColor = features.visuals.names.outline.color,
+                            Font = Drawing.Fonts.Monospace, -- Set font to Monospace
+                            Visible = true,
+                        })
+                        local nameTextBoundsX = (drawings.name.TextBounds and drawings.name.TextBounds.X or 0) * 0.5
+                        local nameYPosition = yPosition - (drawings.name.TextBounds and drawings.name.TextBounds.Y or 0) - 2
+                        drawings.name.Position = Vector2.new(x - nameTextBoundsX, nameYPosition)
+                    end
+
+                    -- Distance visuals
+                    if features.visuals.distance.enabled then
+                        drawings.distance = createOrUpdateDrawing(drawings.distance, "Text", {
+                            Text = "" .. data.distance .. "",
+                            Size = math.max(math.min(math.abs(11 * scale), 11), 10),
+                            Color = features.visuals.distance.color,
+                            Outline = features.visuals.distance.outline.enabled,
+                            OutlineColor = features.visuals.distance.outline.color,
+                            Font = Drawing.Fonts.Monospace, -- Set font to Monospace
+                            Visible = true,
+                        })
+                        local distanceTextBoundsX = (drawings.distance.TextBounds and drawings.distance.TextBounds.X or 0) * 0.5
+                        local distanceYPosition = yPosition + height + (drawings.distance.TextBounds and drawings.distance.TextBounds.Y or 0) * 0.25
+                        drawings.distance.Position = Vector2.new(x - distanceTextBoundsX, distanceYPosition)
+                    end
+
+                    -- Weapon visuals
+                    if features.visuals.weapon.enabled then
+                        drawings.weapon = createOrUpdateDrawing(drawings.weapon, "Text", {
+                            Text = ' ' .. tostring(weaponName) .. ' ',
+                            Size = math.max(math.min(math.abs(10 * scale), 10), 8),
+                            Color = features.visuals.weapon.color,
+                            Outline = features.visuals.weapon.outline.enabled,
+                            OutlineColor = features.visuals.weapon.outline.color,
+                            Font = Drawing.Fonts.Monospace, -- Set font to Monospace
+                            Visible = true,
+                        })
+                        local weaponTextBoundsX = (drawings.weapon.TextBounds and drawings.weapon.TextBounds.X or 0) * 0.5
+                        local weaponYPosition = yPosition + height + (drawings.weapon.TextBounds and drawings.weapon.TextBounds.Y or 0) * 1.5
+                        drawings.weapon.Position = Vector2.new(x - weaponTextBoundsX, weaponYPosition)
+                    end
+
+                    -- Track visible players
+                    visiblePlayers[character] = true
+                else
+                    -- Hide visuals if not visible
+                    for _, drawing in pairs(drawings) do
+                        if drawing then
+                            drawing.Visible = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Remove drawings for players who are no longer visible
+    for character, data in pairs(playerData) do
+        if not visiblePlayers[character] then
+            for _, drawing in pairs(data.drawings) do
+                if drawing then
+                    drawing:Remove()
+                end
+            end
+            playerData[character] = nil
+        end
+    end
+end
+
+-- Connect to RenderStepped to update visuals less frequently
+RunService.RenderStepped:Connect(updateDrawings)
+
+--inventoryviewer
+local teamCheck = false
+local fov = 100
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+
+-- FOV Ring Setup
+local FOVring = Drawing.new("Circle")
+FOVring.Visible = false -- Set this to false to hide the FOV ring
+FOVring.Thickness = 1.5
+FOVring.Radius = fov
+FOVring.Transparency = 1
+FOVring.Color = Color3.fromRGB(255, 128, 128)
+
+local screenGui
+local playerInfoFrame
+local uiCornerFrame
+local playerInfoLabel
+local weaponLabels = {}
+
+-- Function to create UI
+local function createUI()
+    -- Clear previous GUI if it exists
+    if screenGui then
+        screenGui:Destroy()
+    end
+    
+    -- Create GUI elements
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = Player:WaitForChild("PlayerGui")
+
+    playerInfoFrame = Instance.new("Frame")
+    playerInfoFrame.Size = UDim2.new(0, 300, 0, 200) -- Adjust size to fit more players
+    playerInfoFrame.Position = UDim2.new(1, -310, 0, 10) -- Positioned on the right side, 10 pixels from the top
+    playerInfoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    playerInfoFrame.BackgroundTransparency = 0.5
+    playerInfoFrame.Parent = screenGui
+
+    -- Add UICorner to playerInfoFrame
+    uiCornerFrame = Instance.new("UICorner")
+    uiCornerFrame.CornerRadius = UDim.new(0, 10) -- Adjust the radius as needed
+    uiCornerFrame.Parent = playerInfoFrame
+end
+
+local function updateFOVring()
+    local camera = workspace.CurrentCamera
+    FOVring.Position = camera.ViewportSize / 2
+end
+
+local function isPlayerInFOV(player)
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return false
+    end
+
+    local camera = workspace.CurrentCamera
+    local screenPoint, onScreen = camera:WorldToViewportPoint(character.HumanoidRootPart.Position)
+
+    if onScreen then
+        local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - FOVring.Position).Magnitude
+        return distance <= fov
+    end
+
+    return false
+end
+
+local function getWeaponNameFromSlot(player, slot)
+    local weaponName = "none"
+    local success, inventory = pcall(function() return player:FindFirstChild("GunInventory") end)
+    if success and inventory then
+        local success, slotItem = pcall(function() return inventory:FindFirstChild(slot) end)
+        if success and slotItem then
+            weaponName = tostring(slotItem.Value) -- Ensure it's a string
+        end
+    end
+    return weaponName
+end
+
+local function updatePlayerInfo()
+    local camera = workspace.CurrentCamera
+
+    -- Clear previous entry
+    if playerInfoLabel then
+        playerInfoLabel:Destroy()
+        playerInfoLabel = nil
+    end
+    
+    -- Destroy previous weapon labels
+    for _, label in pairs(weaponLabels) do
+        label:Destroy()
+    end
+    weaponLabels = {}
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and (not teamCheck or player.Team ~= Players.LocalPlayer.Team) then
+            if isPlayerInFOV(player) then
+                local character = player.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    local screenPoint = camera:WorldToViewportPoint(character.HumanoidRootPart.Position)
+                    
+                    -- Create a label for the player's name
+                    playerInfoLabel = Instance.new("TextLabel")
+                    playerInfoLabel.Position = UDim2.new(0, 0, 0, 0) -- Start at the top of the frame
+                    playerInfoLabel.Size = UDim2.new(1, 0, 0, 20)
+                    playerInfoLabel.Text = player.Name
+                    playerInfoLabel.TextColor3 = Color3.fromRGB(208, 148, 0)
+                    playerInfoLabel.TextStrokeTransparency = 0.5 -- Add stroke for better readability
+                    playerInfoLabel.Font = Enum.Font.SourceSansBold -- Set font to bold
+                    playerInfoLabel.TextSize = 16 -- Increase text size if needed
+                    playerInfoLabel.BackgroundTransparency = 1
+                    playerInfoLabel.Parent = playerInfoFrame
+
+                    -- Create labels for each slot's weapon name
+                    local yOffset = 20
+                    for i = 1, 4 do
+                        local slotName = "Slot" .. i
+                        local weaponName = getWeaponNameFromSlot(player, slotName)
+                        
+                        local weaponLabel = Instance.new("TextLabel")
+                        weaponLabel.Position = UDim2.new(0, 0, 0, yOffset)
+                        weaponLabel.Size = UDim2.new(1, 0, 0, 20)
+                        weaponLabel.Text = "Slot " .. i .. ": " .. weaponName
+                        weaponLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        weaponLabel.BackgroundTransparency = 1
+                        weaponLabel.Font = Enum.Font.SourceSans -- Regular font for weapon names
+                        weaponLabel.TextSize = 14 -- Adjust text size if needed
+                        weaponLabel.Parent = playerInfoFrame
+
+                        -- Update yOffset for next slot label
+                        yOffset = yOffset + 20
+
+                        -- Add to weaponLabels list
+                        table.insert(weaponLabels, weaponLabel)
+                    end
+
+                    -- Adjust frame size to accommodate all labels
+                    playerInfoFrame.Size = UDim2.new(0, 300, 0, yOffset)
+
+                    -- Break after setting the labels for the first player found
+                    break
+                end
+            end
+        end
+    end
+end
+
+-- Ensure the UI is recreated when the player respawns
+Player.CharacterAdded:Connect(function()
+    createUI()
+end)
+
+RunService.RenderStepped:Connect(function()
+    updateFOVring()
+    updatePlayerInfo()
+end)
+
+-- Initial UI setup
+createUI()
+
+local dwCamera = workspace.CurrentCamera
+local dwRunService = game:GetService("RunService")
+local dwUIS = game:GetService("UserInputService")
+local dwEntities = game:GetService("Players")
+local dwLocalPlayer = dwEntities.LocalPlayer
+local dwMouse = dwLocalPlayer:GetMouse()
+
+local setting = {
+    Aimbot = true,
+    Aiming = false,
+    Aimbot_AimPart = "Head",
+    Aimbot_Teamcheck = false,
+    Aimbot_Draw_FOV = true,
+    Aimbot_FOV_Radius = 300,
+    Aimbot_FOV_Color = Color3.fromRGB(255, 255, 255),
+    Aimbot_Smoothness = 0.1,  -- Smoothness factor (0 to 1)
+    Aimbot_LockMode = 2,      -- 1 for CFrame, 2 for mousemoverel
+    Aimbot_Sensitivity = 0.9,   -- Sensitivity for mousemoverel adjustment
+    Aimbot_Keybind = Enum.KeyCode.F -- Keybind to toggle aimbot
+}
+
+-- Drawing setup for FOV circle
+local fovcircle = Drawing.new("Circle")
+fovcircle.Visible = setting.Aimbot_Draw_FOV
+fovcircle.Radius = setting.Aimbot_FOV_Radius
+fovcircle.Color = setting.Aimbot_FOV_Color
+fovcircle.Thickness = 1
+fovcircle.Filled = false
+fovcircle.Transparency = 1
+
+-- Ensure dwCamera is valid and get ViewportSize
+local function updateFOVCircle()
+    if dwCamera then
+        fovcircle.Position = Vector2.new(dwCamera.ViewportSize.X / 2, dwCamera.ViewportSize.Y / 2)
+    end
+end
+
+
+dwUIS.InputBegan:Connect(function(i)
+    -- Toggle aimbot on keybind press
+    if i.KeyCode == setting.Aimbot_Keybind then
+        setting.Aimbot = not setting.Aimbot
+        fovcircle.Visible = setting.Aimbot and setting.Aimbot_Draw_FOV
+    end
+    
+    -- Start aiming with right mouse button
+    if i.UserInputType == Enum.UserInputType.MouseButton2 then
+        setting.Aiming = true
+    end
+end)
+
+dwUIS.InputEnded:Connect(function(i)
+    -- Stop aiming when right mouse button is released
+    if i.UserInputType == Enum.UserInputType.MouseButton2 then
+        setting.Aiming = false
+    end
+end)
+
+local weaponBulletSpeeds = {
+    ["M4A1"] = 2150,
+    ["MK47"] = 2200,
+    ["AR15"] = 2150,
+    ["AKM"] = 2250,
+    ["Barret50"] = 3350,
+    ["AWM"] = 3350,
+    ["UMP45"] = 1850,
+    ["MP5"] = 1750,
+    ["MRAD"] = 3000,
+    ["SVD"] = 2900,
+    ["Scar"] = 2100,
+    ["Famas"] = 2200,
+    -- Sung luc
+    ["FNX45"] = 1450,
+    ["RevolverNew"] = 1400,
+    ["MK4"] = 1500,
+    ["M1911"] = 1435,
+    ["P226"] = 1450,
+    ["M9"] = 1450,
+    ["Makarov"] = 1550,
+    ["UZI"] = 1700,
+    ["DesertEagle"] = 1450,
+
+    -- Sung truong 
+    ["FAL"] = 2200,
+    ["Sporter"] = 1700,
+    ["M249"] = 2250,
+    
+    -- Shotgun
+    ["DoubleBarrelShotgun"] = 3400,
+    ["Shotgun"] = 3400,
+    ["Mossberg"] = 3400,
+    --sniper
+    ["HuntingRifle"] = 3050,
+}
+
+local function getWeaponNamesFromSlots(player)
+    local weaponNames = {"none", "none", "none", "none"}
+    local inventory = player:FindFirstChild("GunInventory")
+    if inventory then
+        for i = 1, 4 do
+            local slot = inventory:FindFirstChild("Slot" .. i)
+            if slot then
+                weaponNames[i] = tostring(slot.Value) -- Ensure the value is a string
+            end
+        end
+    end
+    return weaponNames
+end
+
+local function getCurrentSlot(player)
+    local currentSelectedObject = player:FindFirstChild("CurrentSelectedObject")
+    if currentSelectedObject and currentSelectedObject.Value then
+        local selectedObjectName = currentSelectedObject.Value.Name
+        if selectedObjectName then
+            local slotNumber = tonumber(selectedObjectName:match("%d+")) -- Extracts the slot number from the name
+            return slotNumber
+        end
+    end
+    return nil
+end
+
+local function getBulletSpeedForCurrentWeapon(player)
+    local weaponNames = getWeaponNamesFromSlots(player)
+    local currentSlot = getCurrentSlot(player)
+
+    if currentSlot then
+        local currentWeapon = weaponNames[currentSlot]
+        local bulletSpeed = weaponBulletSpeeds[currentWeapon]
+        if bulletSpeed then
+            return bulletSpeed
+        else
+            return weaponBulletSpeeds["M4A1"] -- Default bullet speed
+        end
+    else
+        return weaponBulletSpeeds["M4A1"] -- Default bullet speed
+    end
+end
+
+local BULLET_GRAVITY = 100 -- Adjust this value according to your game physics
+
+local function PredictTargetPosition(targetPart, targetVelocity, distance)
+    local bulletSpeed = getBulletSpeedForCurrentWeapon(dwLocalPlayer)
+    local timeToReach = distance / bulletSpeed
+
+    local horizontalPrediction = targetPart.Position + (targetVelocity * timeToReach)
+    local gravityDisplacement = Vector3.new(0, 0.5 * BULLET_GRAVITY * (timeToReach ^ 2), 0)
+    return horizontalPrediction + gravityDisplacement
+end
+
+dwRunService.RenderStepped:Connect(function()
+    if not dwCamera then
+        dwCamera = workspace.CurrentCamera
+        updateFOVCircle()
+        return
+    end
+
+    if not setting.Aimbot then return end -- Skip aimbot processing if it's turned off
+    updateFOVCircle()
+
+    local dist = math.huge
+    local closest_char = nil
+
+    if setting.Aiming then
+        for _, v in pairs(dwEntities:GetPlayers()) do
+            if v ~= dwLocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local char = v.Character:FindFirstChild("WorldCharacter")
+                if char and char:FindFirstChild(setting.Aimbot_AimPart) then
+                    local charPart = char[setting.Aimbot_AimPart]
+                    local charVelocity = v.Character.HumanoidRootPart.Velocity -- Get the target's velocity
+                    local charPartPos, is_onscreen = dwCamera:WorldToViewportPoint(charPart.Position)
+
+                    if is_onscreen then
+                        local mag = (Vector2.new(dwMouse.X, dwMouse.Y) - Vector2.new(charPartPos.X, charPartPos.Y)).Magnitude
+
+                        if mag < dist and mag < setting.Aimbot_FOV_Radius then
+                            dist = mag
+                            closest_char = char
+                        end
+                    end
+                end
+            end
+        end
+
+        if closest_char and closest_char:FindFirstChild(setting.Aimbot_AimPart) then
+            local targetPart = closest_char[setting.Aimbot_AimPart]
+            local targetVelocity = closest_char.Parent.HumanoidRootPart.Velocity -- Assuming you want to use the target's current velocity
+            local distanceToTarget = (targetPart.Position - dwLocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            local predictedPosition = PredictTargetPosition(targetPart, targetVelocity, distanceToTarget)
+
+            -- Use the predicted position for aiming
+            local target_position = dwCamera:WorldToViewportPoint(predictedPosition)
+            local center = Vector2.new(dwCamera.ViewportSize.X / 2, dwCamera.ViewportSize.Y / 2)
+            local delta = Vector2.new(target_position.X - center.X, target_position.Y - center.Y)
+
+            if setting.Aimbot_LockMode == 2 then
+                local sensitivity = setting.Aimbot_Sensitivity
+                mousemoverel(delta.X * sensitivity, delta.Y * sensitivity)
+            else
+                local smooth_factor = setting.Aimbot_Smoothness
+                local new_position = center + delta * smooth_factor
+                local look_at_position = dwCamera.CFrame.Position + Vector3.new(delta.X / dwCamera.ViewportSize.X, delta.Y / dwCamera.ViewportSize.Y, 0)
+                local target_cframe = CFrame.new(dwCamera.CFrame.Position, look_at_position)
+                dwCamera.CFrame = dwCamera.CFrame:Lerp(target_cframe, smooth_factor)
+            end
+        end
+    end
+end)
+
+
+
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+-- Variables
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local partSize = Vector3.new(5, 1, 5) -- Size of the part
+local partHeightOffset = -0.51 -- Initial offset to position the part just below the player's feet
+local moveSpeed = 0.5 -- Speed at which the part moves up and down
+
+-- Variable to store the last part created
+local lastPart = nil
+
+-- Toggle variable
+local isPartEnabled = false
+
+-- Function to create a part
+local function createPart()
+    if not isPartEnabled then return end -- Only create part if enabled
+    
+    -- Check if the player's character still exists
+    if not character or not humanoidRootPart or not humanoidRootPart.Parent then
+        -- Reconnect character and humanoidRootPart if needed
+        character = player.Character or player.CharacterAdded:Wait()
+        humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        return
+    end
+
+    -- Delete the old part if it exists
+    if lastPart then
+        lastPart:Destroy()
+    end
+
+    -- Create the new part
+    local part = Instance.new("Part")
+    part.Size = partSize
+    part.Transparency = 1 -- Make the part fully transparent (invisible)
+    part.CanCollide = true
+    part.Anchored = true
+    part.CastShadow = false -- Disable shadow casting
+    part.Parent = workspace
+
+    -- Position the part based on the current offset
+    part.Position = humanoidRootPart.Position + Vector3.new(0, partHeightOffset, 0)
+
+    -- Store the current part as the last part
+    lastPart = part
+end
+
+-- Function to handle input
+local function onInput(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.Space then
+            partHeightOffset = partHeightOffset + moveSpeed
+        elseif input.KeyCode == Enum.KeyCode.B then
+            partHeightOffset = partHeightOffset - moveSpeed
+        elseif input.KeyCode == Enum.KeyCode.Y then
+            isPartEnabled = not isPartEnabled -- Toggle the part creation
+        end
+    end
+end
+
+-- Connect the input function
+UserInputService.InputBegan:Connect(onInput)
+
+-- Connect the createPart function to RunService's RenderStepped to create the part every frame
+RunService.RenderStepped:Connect(createPart)
+
+-- Reconnect character and humanoidRootPart when the player respawns
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+end)
+
+
+--Ui
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Baodz123s/sss.x-/refs/heads/main/asd**%25%25"))()
+local window = library:Win()
+local tap1 = window:addtap("Visual")
+local tap2 = window:addtap("Aiming")
+local tap3 = window:addtap("Player")
+local page1 = tap1:addpage()
+local page2 = tap1:addpage()
+local page12 = tap2:addpage()
+local page21 = tap2:addpage()
+local page22 = tap3:addpage()
+local page23 = tap3:addpage()
+
+page1:Ti("Box")
+
+-- Add toggles for Box, Filled, Name, Distance, and Weapon visuals
+page1:Toggle("Toggle Box", features.visuals.boxes.enabled, function(value)
+    features.visuals.boxes.enabled = value -- Toggle the box visibility
+end)
+
+page1:Toggle("Toggle Box Filled", features.visuals.boxes.filled.enabled, function(value)
+    features.visuals.boxes.filled.enabled = value -- Toggle the box filled visibility
+end)
+
+page1:Toggle("Toggle Name", features.visuals.names.enabled, function(value)
+    features.visuals.names.enabled = value -- Toggle the name visibility
+end)
+
+page1:Toggle("Toggle Distance", features.visuals.distance.enabled, function(value)
+    features.visuals.distance.enabled = value -- Toggle the distance visibility
+end)
+
+page1:Toggle("Toggle Weapon", features.visuals.weapon.enabled, function(value)
+    features.visuals.weapon.enabled = value -- Toggle the weapon visibility
+end)
+
+page2:Ti("HighLight")
+-- Toggle for enabling/disabling highlights
+page2:Toggle("Toggle Highlight", true, function(value)
+    ToggleHighlight(value) -- Toggle the highlights
+end)
+
+-- Slider for adjusting FillTransparency
+local getslider = page2:Slder("Fill Transparency", 0, 1, FillTransparency, function(value)
+    FillTransparency = value -- Update FillTransparency
+    ReloadHighlights() -- Reload highlights to apply the new value
+end)
+
+-- Slider for adjusting OutlineTransparency
+local getslider = page2:Slder("Outline Transparency", 0, 1, OutlineTransparency, function(value)
+    OutlineTransparency = value -- Update OutlineTransparency
+    ReloadHighlights() -- Reload highlights to apply the new value
+end)
+
+page12:Ti("AimBot")
+
+page12:Toggle("Enable Aimbot", setting.Aimbot, function(value)
+    setting.Aimbot = value
+    fovcircle.Visible = setting.Aimbot and setting.Aimbot_Draw_FOV
+end)
+
+local getslider = page12:Slder("FOV Radius", 100, 500, AIMBOT_FOV_RADIUS, function(value)
+    setting.Aimbot_FOV_Radius = value
+    fovcircle.Radius = value
+end)
+
+local getlable = page12:Label("F = toggle Aimbot")
+
+page21:Ti("InventoryViewer")
+
+
+
+-- Create a slider for FOV
+local getslider = page21:Slder("FOV", 50, 500, 100, function(value)
+    setting.Aimbot_FOV_Radius = value -- Update the FOV ring radius based on slider value
+end)
+
+
+page23:Ti("Fly")
+
+page23:Toggle("Enable Fly", isPartEnabled, function(value)
+    isPartEnabled = value
+end)
+
+local getlable = page23:Label("space = up")
+local getlable = page23:Label("B = Down")
+local getlable = page23:Label("Y = toggleFly")
