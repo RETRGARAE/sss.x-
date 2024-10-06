@@ -1,4 +1,6 @@
 return {
     "E83C97B2-73E3-4910-AF9B-6CD491B62B6E", -- Replace with actual HWIDs
-    "HWID2", -- Replace with actual HWIDs
+    "E82A66C4-94A4-42CE-9B68-A6DACA4D908A", -- Replace with actual HWIDs
+    "6104F63B-47FB-43B0-AE99-452B3170AC95",
+    "HWI",
 }
