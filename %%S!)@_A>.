@@ -1,18 +1,5 @@
 function Init()
-	local Savefolder = "ConfigHBPscript"
 
-
-	if not isfolder(Savefolder) then
-		makefolder(Savefolder)
-	end
-
-
-	local ConfigUI = Savefolder .. "/" .. game.PlaceId
-
-
-	if not isfolder(ConfigUI) then
-		makefolder(ConfigUI)
-	end
 
 	local ibs = game:GetService("UserInputService")
 	local tws = game:GetService("TweenService")
@@ -203,50 +190,7 @@ function Init()
 		end
 	end
 
-	function library:SaveConfig(name)
-		local configstr = "{toggles={"
-		local count = 0
 
-
-		for flag, _ in next, flags.toggles do
-			count = count + 1
-			configstr = configstr .. "['" .. flag .. "']=" .. tostring(library.flags[flag]) .. ","
-		end
-
-		configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "},sliders={"
-
-
-		count = 0
-		for flag, _ in next, flags.sliders do
-			count = count + 1
-			configstr = configstr .. "['" .. flag .. "']=" .. tostring(library.flags[flag]) .. ","
-		end
-
-		configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "},keybinds={"
-
-
-		count = 0
-		for flag, _ in next, flags.keybinds do
-			count = count + 1
-			configstr = configstr .. "['" .. flag .. "']=" .. tostring(library.flags[flag]) .. ","
-		end
-
-
-		configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "},colorpickers={"
-
-
-		count = 0
-		for flag, _ in next, flags.colorpickers do
-			count = count + 1
-			configstr = configstr .. "['" .. flag .. "']=Color3.new(" .. tostring(library.flags[flag]) .. "),"
-		end
-
-
-		configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "}}"
-
-
-		writefile(ConfigUI .. "/" .. name .. ".cfg", "return " .. configstr)
-	end
 
 	function library:Load(opts)
 		local options = HBPUI.table(opts)
@@ -282,7 +226,7 @@ function Init()
 			TextSize = 14,
 			TextColor3 = Color3.fromRGB(216, 113, 206),
 			Text = name,
-			Font = Enum.Font.GothamSemibold,
+			Font = Enum.Font.Code,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = topbar
 		})
@@ -357,7 +301,7 @@ function Init()
 				TextSize = 14,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				Text = name,
-				Font = toggled and Enum.Font.GothamSemibold or Enum.Font.Gotham,
+				Font = toggled and Enum.Font.Code or Enum.Font.Fantasy,
 				Parent = tabTogglesHolder
 			})
 
@@ -426,12 +370,12 @@ function Init()
 			local function openTab()
 				for _, obj in next, tabTogglesHolder:GetChildren() do
 					if obj:IsA("TextButton") then
-						obj.Font = Enum.Font.Gotham
+						obj.Font = Enum.Font.Fantasy
 					end
 				end
 
 
-				tabToggle.Font = Enum.Font.GothamSemibold
+				tabToggle.Font = Enum.Font.Code
 
 
 				for _, obj in next, tabs:GetChildren() do
@@ -494,7 +438,7 @@ function Init()
 					TextSize = 13,
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					Text = name,
-					Font = Enum.Font.GothamSemibold,
+					Font = Enum.Font.Code,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					Parent = sectionTopbar
 				})
@@ -543,7 +487,7 @@ function Init()
 						TextSize = 13,
 						Text = text,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = sectionContent
 					})
@@ -581,7 +525,7 @@ function Init()
 						TextSize = 13,
 						Text = text,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						Parent = sectionContent
 					})
 
@@ -642,7 +586,7 @@ function Init()
 						ZIndex = 3,
 						Size = UDim2.new(1, 0, 0, 16),
 						BorderColor3 = Color3.fromRGB(155, 73, 222),
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 						Text = "",
 						TextXAlignment = Enum.TextXAlignment.Left,
@@ -667,7 +611,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = button
 					})
@@ -756,7 +700,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(180, 180, 180),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = icon
 					})
@@ -916,7 +860,7 @@ function Init()
 						TextSize = 12,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = valueText:gsub("%[VALUE%]", tostring(default)),
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						Parent = slider
 					})
 
@@ -1125,7 +1069,7 @@ function Init()
 						TextSize = 12,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = valueText:gsub("%[VALUE%]", tostring(default)),
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						Parent = slider
 					})
 
@@ -1170,7 +1114,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = icon
 					})
@@ -1441,7 +1385,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = keybind
 					})
@@ -1455,7 +1399,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(180, 180, 180),
 						Text = default and (keys[default] or tostring(default):gsub("Enum.KeyCode.", "")) or "NONE",
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Right,
 						Parent = keybind
 					})
@@ -1690,7 +1634,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = toggleKeybind
 					})
@@ -1719,7 +1663,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(180, 180, 180),
 						Text = default and (keys[default] or tostring(default):gsub("Enum.KeyCode.", "")) or "NONE",
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Right,
 						Parent = toggleKeybind
 					})
@@ -1966,7 +1910,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = colorPicker
 					})
@@ -2055,7 +1999,7 @@ function Init()
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = table.concat({HBPUI.get_rgb(default)}, ", "),
 						ClearTextOnFocus = false,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						PlaceholderText = "R,  G,  B",
 						Parent = picker
 					})
@@ -2086,7 +2030,7 @@ function Init()
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = HBPUI.rgb_to_hex(default),
 						ClearTextOnFocus = false,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						PlaceholderText = HBPUI.rgb_to_hex(default),
 						Parent = picker
 					})
@@ -2430,7 +2374,7 @@ function Init()
 						TextSize = 13,
 						TextColor3 = Color3.fromRGB(180, 180, 180),
 						Text = name,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Parent = icon
 					})
@@ -2501,7 +2445,7 @@ function Init()
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = table.concat({HBPUI.get_rgb(default)}, ", "),
 						ClearTextOnFocus = false,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						PlaceholderText = "R,  G,  B",
 						Parent = picker
 					})
@@ -2532,7 +2476,7 @@ function Init()
 						TextColor3 = Color3.fromRGB(255, 255, 255),
 						Text = HBPUI.rgb_to_hex(default),
 						ClearTextOnFocus = false,
-						Font = Enum.Font.Gotham,
+						Font = Enum.Font.Fantasy,
 						PlaceholderText = HBPUI.rgb_to_hex(default),
 						Parent = picker
 					})
