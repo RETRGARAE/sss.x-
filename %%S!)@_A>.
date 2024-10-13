@@ -645,143 +645,134 @@ function Init()
 					return buttonTypes
 				end
 				-- TOGGLE
-				function sectionTypes:Toggle(opts)
-					local options = HBPUI.table(opts)
-					local name = options.name or "Toggle"
-					local flag = options.flag 
-					local callback = options.callback or function() end
+function sectionTypes:Toggle(opts)
+    local options = HBPUI.table(opts)
+    local name = options.name or "Toggle"
+    local flag = options.flag 
+    local callback = options.callback or function() end
+    local default = options.Default or false  -- Read the default state
+
+    local toggled = default  -- Set the initial state based on the default option
+
+    if flag then
+        library.flags[flag] = toggled
+    end
+
+    callback(toggled)
+
+    local toggle = HBPUI.create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 16),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(0, 0, 0),
+        Font = Enum.Font.SourceSans,
+        Parent = sectionContent
+    })
+
+    local icon = HBPUI.create("Frame", {
+        ZIndex = 3,
+        Size = UDim2.new(0, 14, 1, -2),
+        BorderColor3 = Color3.fromRGB(155, 73, 222),
+        Position = UDim2.new(0, 0, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        Parent = toggle
+    })
+
+    local iconGradient = HBPUI.create("UIGradient", {
+        Rotation = 90,
+        Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(32, 32, 32)), 
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 17, 17))
+        },
+        Parent = icon
+    })
+
+    local title = HBPUI.create("TextLabel", {
+        ZIndex = 3,
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, 7, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        FontSize = Enum.FontSize.Size14,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(180, 180, 180),
+        Text = name,
+        Font = Enum.Font.Fantasy,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = icon
+    })
+
+    local function updateVisuals()
+        local textColor = toggled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+        local gradientColor
+
+        if toggled then
+            gradientColor = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, library.color), 
+                ColorSequenceKeypoint.new(1, HBPUI.change_color(library.color, -47))
+            }
+            table.insert(coloredGradients, iconGradient)
+        else
+            gradientColor = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(32, 32, 32)), 
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 17, 17))
+            }
+            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
+        end
+
+        iconGradient.Color = gradientColor
+        title.TextColor3 = textColor
+    end
+
+    local function toggleToggle()
+        toggled = not toggled
+        updateVisuals()  -- Call to update visuals when toggled
+
+        if flag then
+            library.flags[flag] = toggled
+        end
+
+        callback(toggled)
+    end
+
+    toggle.MouseButton1Click:Connect(toggleToggle)
+
+    -- Initialize toggle visuals if default is true
+    if default then
+        updateVisuals()  -- Call this to apply the visual changes for being toggled on
+    end
+
+    local toggleTypes = HBPUI.table()
+
+    function toggleTypes:Show()
+        toggle.Visible = true
+    end
+
+    function toggleTypes:Hide()
+        toggle.Visible = false
+    end
+
+    function toggleTypes:SetName(str)
+        title.Text = str
+    end
+
+    function toggleTypes:Toggle(bool)
+        if toggled ~= bool then
+            toggleToggle()
+        end
+    end
+
+    if flag then
+        flags.toggles[flag] = function(bool)
+            if toggled ~= bool then
+                toggleToggle()
+            end
+        end
+    end
+
+    return toggleTypes
+end
 
 
-					local toggled = false
-
-
-					if flag then
-						library.flags[flag] = toggled
-					end
-
-
-					callback(toggled)
-
-
-					local toggle = HBPUI.create("TextButton", {
-						Size = UDim2.new(1, 0, 0, 16),
-						BackgroundTransparency = 1,
-						TextColor3 = Color3.fromRGB(0, 0, 0),
-						Font = Enum.Font.SourceSans,
-						Parent = sectionContent
-					})
-
-					local icon = HBPUI.create("Frame", {
-						ZIndex = 3,
-						Size = UDim2.new(0, 14, 1, -2),
-						BorderColor3 = Color3.fromRGB(155, 73, 222),
-						Position = UDim2.new(0, 0, 0, 1),
-						BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-						Parent = toggle
-					})
-
-
-					local iconGradient = HBPUI.create("UIGradient", {
-						Rotation = 90,
-						Color = ColorSequence.new{
-							ColorSequenceKeypoint.new(0, Color3.fromRGB(32, 32, 32)), 
-							ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 17, 17))
-						},
-						Parent = icon
-					})
-
-					local title = HBPUI.create("TextLabel", {
-						ZIndex = 3,
-						Size = UDim2.new(0, 0, 1, 0),
-						BackgroundTransparency = 1,
-						Position = UDim2.new(1, 7, 0, 0),
-						BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-						FontSize = Enum.FontSize.Size14,
-						TextSize = 13,
-						TextColor3 = Color3.fromRGB(180, 180, 180),
-						Text = name,
-						Font = Enum.Font.Fantasy,
-						TextXAlignment = Enum.TextXAlignment.Left,
-						Parent = icon
-					})
-
-
-					local function toggleToggle()
-						toggled = not toggled
-
-
-						if toggled then
-							table.insert(coloredGradients, iconGradient)
-						else
-							table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
-						end
-
-
-						local textColor = toggled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
-						local gradientColor
-						if toggled then
-							gradientColor = ColorSequence.new{
-								ColorSequenceKeypoint.new(0, library.color), 
-								ColorSequenceKeypoint.new(1, HBPUI.change_color(library.color, -47))
-							}
-						else
-							gradientColor = ColorSequence.new{
-								ColorSequenceKeypoint.new(0, Color3.fromRGB(32, 32, 32)), 
-								ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 17, 17))
-							}
-						end
-
-
-						iconGradient.Color = gradientColor
-						title.TextColor3 = textColor
-
-
-						if flag then
-							library.flags[flag] = toggled
-						end
-
-
-						callback(toggled)
-					end
-
-
-					toggle.MouseButton1Click:Connect(toggleToggle)
-
-
-					local toggleTypes = HBPUI.table()
-
-
-					function toggleTypes:Show()
-						toggle.Visible = true
-					end
-
-					function toggleTypes:Hide()
-						toggle.Visible = false
-					end
-
-					function toggleTypes:SetName(str)
-						title.Text = str
-					end
-
-
-					function toggleTypes:Toggle(bool)
-						if toggled ~= bool then
-							toggleToggle()
-						end
-					end
-
-
-					if flag then
-						flags.toggles[flag] = function(bool)
-							if toggled ~= bool then
-								toggleToggle()
-							end
-						end
-					end
-
-
-					return toggleTypes
-				end
 
 				--Slider              
 				function sectionTypes:Slider(opts)
@@ -2752,4 +2743,5 @@ function Init()
 
 	return library
 end
+
 
