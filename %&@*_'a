@@ -1,0 +1,1242 @@
+function Init()
+
+
+	local ibs = game:GetService("UserInputService")
+	local tws = game:GetService("TweenService")
+	local rs = game:GetService("RunService")
+	local cg = game:GetService("CoreGui")
+
+
+	local HBPUI = {}
+
+
+	function HBPUI.create(class, properties)
+		properties = properties or {}
+
+
+		local obj = Instance.new(class)
+
+
+		local fp = {
+			AutoButtonColor = false
+		}
+
+
+		for prop, v in next, properties do
+			obj[prop] = v
+		end
+
+
+		for prop, v in next, fp do
+			pcall(function()
+				obj[prop] = v
+			end)
+		end
+
+		return obj
+	end
+
+
+	function HBPUI.change_color(color, amount)
+		local r = math.clamp(math.floor(color.r * 255) + amount, 0, 255)
+		local g = math.clamp(math.floor(color.g * 255) + amount, 0, 255)
+		local b = math.clamp(math.floor(color.b * 255) + amount, 0, 255)
+
+
+		return Color3.fromRGB(r, g, b)
+	end
+
+
+	function HBPUI.get_rgb(color)
+		local r = math.floor(color.r * 255)
+		local g = math.floor(color.g * 255)
+		local b = math.floor(color.b * 255)
+
+
+		return r, g, b
+	end
+
+	function HBPUI.tween(obj, info, properties, callback)
+		local anim = tws:Create(obj, TweenInfo.new(unpack(info)), properties)
+		anim:Play()
+
+
+		if callback then
+			anim.Completed:Connect(callback)
+		end
+	end
+
+	function HBPUI.drag(obj, dragSpeed)
+		local start, objPosition, dragging
+
+
+		obj.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				dragging = true
+				start = input.Position
+				objPosition = obj.Position
+			end
+		end)
+
+
+		obj.InputEnded:Connect(function(input )
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+				dragging = false
+			end
+		end)
+
+
+		ibs.InputChanged:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then   
+				HBPUI.tween(obj, {dragSpeed}, {Position = UDim2.new(objPosition.X.Scale, objPosition.X.Offset + (input.Position - start).X, objPosition.Y.Scale, objPosition.Y.Offset + (input.Position - start).Y)})
+			end
+		end)
+	end
+
+	function HBPUI.get_center(sizeX, sizeY)
+		return UDim2.new(0.5, -(sizeX / 2), 0.5, -(sizeY / 2))
+	end
+
+
+	function HBPUI.hex_to_rgb(hex)
+		return Color3.fromRGB(tonumber("0x" .. hex:sub(2, 3)), tonumber("0x" .. hex:sub(4, 5)), tonumber("0x"..hex:sub(6, 7)))
+	end
+
+
+	function HBPUI.rgb_to_hex(color)
+		return string.format("#%02X%02X%02X", math.clamp(color.R * 255, 0, 255), math.clamp(color.G * 255, 0, 255), math.clamp(color.B * 255, 0, 255))
+	end
+
+	function HBPUI.table(tbl)
+		local oldtbl = tbl or {}
+		local newtbl = {}
+		local formattedtbl = {}
+
+
+		for option, v in next, oldtbl do
+			newtbl[option:lower()] = v
+		end
+
+
+		setmetatable(formattedtbl, {
+			__newindex = function(t, k, v)
+				rawset(newtbl, k:lower(), v)
+			end,
+			__index = function(t, k, v)
+				return newtbl[k:lower()]
+			end
+		})
+
+
+		return formattedtbl
+	end
+
+	local library = HBPUI.table{
+		flags = {}, 
+		toggled = true,
+		color = Color3.fromRGB(254, 0, 0),
+		keybind = Enum.KeyCode.RightShift, 
+		dragSpeed = 0.1
+	}    
+
+
+	local coloredGradients = {}
+
+
+	function library:SetColor(color)
+		for _, obj in next, coloredGradients do
+			obj.Color = ColorSequence.new{
+				ColorSequenceKeypoint.new(0, color),
+				ColorSequenceKeypoint.new(1, HBPUI.change_color(color, -49))
+			}
+		end
+
+
+		library.color = color
+	end
+
+	local gui = HBPUI.create("ScreenGui")
+
+	ibs.InputBegan:Connect(function(input)
+		if input.KeyCode == library.keybind then
+			library.toggled = not library.toggled
+			gui.Enabled = library.toggled
+		end
+	end)
+
+	gui.Parent = cg
+
+	local flags = {toggles = {}, sliders = {}, keybinds = {}, colorpickers = {}}
+
+	function library:LoadConfig(file)
+		local str = readfile(ConfigUI .. "/" .. file .. ".cfg")
+		local tbl = loadstring(str)()
+
+		for flag, value in next, tbl.toggles do
+			flags.toggles[flag](value)
+		end
+
+		for flag, value in next, tbl.sliders do
+			flags.sliders[flag](value)
+		end
+
+		for flag, value in next, tbl.keybinds do
+			flags.keybinds[flag](value)
+		end
+
+
+		for flag, value in next, tbl.colorpickers do
+			flags.colorpickers[flag](value)
+		end
+	end
+
+
+
+	function library:Load(opts)
+		local options = HBPUI.table(opts)
+		local name = options.name or "HBP"
+		local sizeX = options.sizeX or 466
+		local sizeY = options.sizeY or 350
+		local color = options.color or Color3.fromRGB(254, 254, 254)
+		local dragSpeed = options.dragSpeed or 0
+
+
+		library.color = color
+
+
+		local topbar = HBPUI.create("Frame", {
+			ZIndex = 2,
+			Size = UDim2.new(0, sizeX, 0, 26),
+			Position = HBPUI.get_center(sizeX, sizeY),
+			BorderSizePixel = 0,
+			BackgroundColor3 = Color3.fromRGB(23, 23, 23),
+			Parent = gui
+		})
+
+
+		HBPUI.drag(topbar, dragSpeed)
+
+
+		HBPUI.create("TextLabel", {
+			ZIndex = 3,
+			Size = UDim2.new(0, 0, 1, 0),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 8, 0, 0),
+			FontSize = Enum.FontSize.Size14,
+			TextSize = 14,
+			TextColor3 = Color3.fromRGB(216, 113, 206),
+			Text = name,
+			Font = Enum.Font.Code,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = topbar
+		})
+
+		local main = HBPUI.create("Frame", {
+			Size = UDim2.new(1, 0, 0, sizeY),
+			BorderColor3 = Color3.fromRGB(23, 23, 23),
+			BackgroundColor3 = Color3.fromRGB(33, 33, 33),
+			Parent = topbar
+		})
+
+
+		local tabs = HBPUI.create("Frame", {
+			ZIndex = 2,
+			Size = UDim2.new(1, -8, 1, -64),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 4, 0, 58),
+			BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+			Parent = main
+		})
+
+		local tabToggles = HBPUI.create("Frame", {
+			ZIndex = 2,
+			Size = UDim2.new(1, 0, 0, 26),
+			BorderColor3 = Color3.fromRGB(23, 23, 23),
+			Position = UDim2.new(0, 0, 0, 26),
+			BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+			Parent = main
+		})
+
+
+		local tabTogglesHolder = HBPUI.create("Frame", {
+			Size = UDim2.new(1, -12, 1, 0),
+			Position = UDim2.new(0, 6, 0, 0),
+			Parent = tabToggles
+		})
+
+
+		HBPUI.create("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 4),
+			Parent = tabTogglesHolder
+		})
+
+
+		local windowTypes = HBPUI.table({count = 0})
+
+
+		function windowTypes:Show()
+			gui.Enabled = true
+		end
+
+
+		function windowTypes:Hide()
+			gui.Enabled = false
+		end
+
+		function windowTypes:Tab(name)
+			windowTypes.count = windowTypes.count + 1
+			name = name or "Tab"
+
+
+			local toggled = windowTypes.count == 1
+
+
+			local tabToggle = HBPUI.create("TextButton", {
+				ZIndex = 3,
+				BackgroundTransparency = 1,
+				BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+				FontSize = Enum.FontSize.Size14,
+				TextSize = 14,
+				TextColor3 = Color3.fromRGB(254, 254, 254),
+				Text = name,
+				Font = toggled and Enum.Font.Code or Enum.Font.Fantasy,
+				Parent = tabTogglesHolder
+			})
+
+			tabToggle.Size = UDim2.new(0, tabToggle.TextBounds.X + 12, 1, 0)
+
+
+			local tab = HBPUI.create("Frame", {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+				Visible = toggled,
+				Parent = tabs
+			})
+
+			local column1 = HBPUI.create("ScrollingFrame", {
+				Size = UDim2.new(0.5, -2, 1, 0),
+				BackgroundTransparency = 1,
+				Active = true,
+				BorderSizePixel = 0,
+				BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+				ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0),
+				ScrollBarImageTransparency = 1,
+				ScrollBarThickness = 0,
+				Parent = tab
+			})
+
+
+			local column1List = HBPUI.create("UIListLayout", {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 6),
+				Parent = column1
+			})
+
+
+			column1List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				column1.CanvasSize = UDim2.new(0, 0, 0, column1List.AbsoluteContentSize.Y)
+			end)
+
+
+			local column2 = HBPUI.create("ScrollingFrame", {
+				Size = UDim2.new(0.5, -2, 1, 0),
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0.5, 2, 0, 0),
+				Active = true,
+				BorderSizePixel = 0,
+				BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+				ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0),
+				ScrollBarImageTransparency = 1,
+				ScrollBarThickness = 0,
+				CanvasPosition = Vector2.new(0, 150),
+				Parent = tab
+			})
+
+
+			local column2List = HBPUI.create("UIListLayout", {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 6),
+				Parent = column2
+			})
+
+
+			column2List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				column2.CanvasSize = UDim2.new(0, 0, 0, column2List.AbsoluteContentSize.Y)
+			end)
+
+			local function openTab()
+				for _, obj in next, tabTogglesHolder:GetChildren() do
+					if obj:IsA("TextButton") then
+						obj.Font = Enum.Font.Fantasy
+					end
+				end
+
+
+				tabToggle.Font = Enum.Font.Code
+
+
+				for _, obj in next, tabs:GetChildren() do
+					obj.Visible = false
+				end
+
+
+				tab.Visible = true
+			end
+
+
+			tabToggle.MouseButton1Click:Connect(openTab)
+
+			local tabTypes = HBPUI.table()
+
+
+			function tabTypes:Open()
+				openTab()
+			end
+
+			function tabTypes:Section(opts)
+				local options = HBPUI.table(opts)
+				local name = options.name or "Section"
+				local column = options.column or 1
+
+				local columnFrame = column == 1 and column1 or column == 2 and column2
+
+				local sectionHolder = HBPUI.create("Frame", {
+					Size = UDim2.new(1, 0, 0, 26),
+					BackgroundTransparency = 1,
+					BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+					Parent = columnFrame
+				})
+
+				local section = HBPUI.create("Frame", {
+					ZIndex = 2,
+					Size = UDim2.new(1, -2, 1, -2),
+					BorderColor3 = Color3.fromRGB(23, 23, 23),
+					Position = UDim2.new(0, 1, 0, 1),
+					BackgroundColor3 = Color3.fromRGB(29, 29, 29),
+					Parent = sectionHolder
+				})
+
+				local sectionTopbar = HBPUI.create("Frame", {
+					ZIndex = 3,
+					Size = UDim2.new(1, 0, 0, 24),
+					BorderSizePixel = 0,
+					BackgroundColor3 = Color3.fromRGB(23, 23, 23),
+					Parent = section
+				})
+
+
+				HBPUI.create("TextLabel", {
+					ZIndex = 3,
+					Size = UDim2.new(0, 0, 1, 0),
+					BackgroundTransparency = 1,
+					Position = UDim2.new(0, 8, 0, 0),
+					BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+					FontSize = Enum.FontSize.Size14,
+					TextSize = 13,
+					TextColor3 = Color3.fromRGB(254, 254, 254),
+					Text = name,
+					Font = Enum.Font.Code,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Parent = sectionTopbar
+				})
+
+
+				local sectionContent = HBPUI.create("Frame", {
+					Size = UDim2.new(1, -12, 1, -36),
+					Position = UDim2.new(0, 6, 0, 30),
+					BackgroundTransparency = 1,
+					Parent = section
+				})
+
+				local sectionContentList = HBPUI.create("UIListLayout", {
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 6),
+					Parent = sectionContent
+				})
+
+
+				sectionContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+					sectionHolder.Size = UDim2.new(1, 0, 0, sectionContentList.AbsoluteContentSize.Y + 38)
+				end)
+
+
+				local sectionTypes = HBPUI.table()
+
+
+				function sectionTypes:Show()
+					sectionHolder.Visible = true
+				end
+
+
+				function sectionTypes:Hide()
+					sectionHolder.Visible = false
+				end
+
+
+				function sectionTypes:Label(text)
+					local label = HBPUI.create("TextLabel", {
+						ZIndex = 3,
+						Size = UDim2.new(0, 0, 0, 14),
+						BackgroundTransparency = 1,
+						Position = UDim2.new(0, 8, 0, 0),
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 13,
+						Text = text,
+						TextColor3 = Color3.fromRGB(254, 254, 254),
+						Font = Enum.Font.Fantasy,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						Parent = sectionContent
+					})
+
+
+					local labelTypes = HBPUI.table()
+
+
+					function labelTypes:Show()
+						label.Visible = true
+					end
+
+
+					function labelTypes:Hide()
+						label.Visible = false
+					end
+
+
+					function labelTypes:Set(str)
+						label.Text = str
+					end
+
+
+					return labelTypes
+				end
+
+				function sectionTypes:SpecialLabel(text)
+					local specialLabel = HBPUI.create("TextLabel", {
+						ZIndex = 5,
+						Size = UDim2.new(1, 0, 0, 14),
+						BackgroundTransparency = 1,
+						Position = UDim2.new(0, 8, 0, 0),
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 13,
+						Text = text,
+						TextColor3 = Color3.fromRGB(254, 254, 254),
+						Font = Enum.Font.Fantasy,
+						Parent = sectionContent
+					})
+
+
+					HBPUI.create("Frame", {
+						ZIndex = 3,
+						Size = UDim2.new(1, 0, 0, 1),
+						Position = UDim2.new(0, 0, 0.5, 1),
+						BorderSizePixel = 0,
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						Parent = specialLabel
+					})
+
+					local lineBlock = HBPUI.create("Frame", {
+						ZIndex = 4,
+						Size = UDim2.new(0, specialLabel.TextBounds.X + 6, 0, 1),
+						Position = UDim2.new(0.5, -((specialLabel.TextBounds.X + 6) / 2), 0.5, 1),
+						BorderSizePixel = 0,
+						BackgroundColor3 = Color3.fromRGB(29, 29, 29),
+						Parent = specialLabel
+					})
+
+
+					specialLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
+						lineBlock.Size = UDim2.new(0, specialLabel.TextBounds.X + 6, 0, 1)
+						lineBlock.Position = UDim2.new(0.5, -((specialLabel.TextBounds.X + 6) / 2), 0.5, 1)
+					end)
+
+
+					local specialLabelTypes = HBPUI.table()
+
+
+					function specialLabelTypes:Show()
+						specialLabel.Visible = true
+					end
+
+
+					function specialLabelTypes:Hide()
+						specialLabel.Visible = false
+					end
+
+
+					function specialLabelTypes:Set(str)
+						specialLabel.Text = str
+					end
+
+
+					return specialLabelTypes
+				end
+				-- BUTTON
+				function sectionTypes:Button(opts)
+					local options = HBPUI.table(opts)
+					local name = options.name
+					local callback = options.callback
+
+
+					local button = HBPUI.create("TextButton", {
+						ZIndex = 3,
+						Size = UDim2.new(1, 0, 0, 16),
+						BorderColor3 = Color3.fromRGB(155, 73, 222),
+						Font = Enum.Font.Fantasy,
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						Text = "",
+						TextXAlignment = Enum.TextXAlignment.Left,
+						Parent = sectionContent
+					})
+
+					HBPUI.create("UIGradient", {
+						Rotation = 90,
+						Color = ColorSequence.new{
+							ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 33, 33)), 
+							ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+						},
+						Parent = button
+					})
+
+					local title = HBPUI.create("TextLabel", {
+						ZIndex = 4,
+						Size = UDim2.new(0, 0, 1, 0),
+						BackgroundTransparency = 1,
+						Position = UDim2.new(0, 8, 0, 0),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 13,
+						TextColor3 = Color3.fromRGB(254, 254, 254),
+						Text = name,
+						Font = Enum.Font.Fantasy,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						Parent = button
+					})
+
+
+					local buttonTypes = HBPUI.table()
+
+
+					button.MouseButton1Click:Connect(function()
+						callback(buttonTypes)
+					end)
+
+
+					function buttonTypes:Show()
+						button.Visible = true
+					end
+
+					function buttonTypes:Hide()
+						button.Visible = false
+					end
+
+					function buttonTypes:SetName(str)
+						title.Text = str
+					end
+
+
+					function buttonTypes:SetCallback(func)
+						callback = func
+					end
+
+					return buttonTypes
+				end
+				-- TOGGLE
+function sectionTypes:Toggle(opts)
+    local options = HBPUI.table(opts)
+    local name = options.name or "Toggle"
+    local flag = options.flag 
+    local callback = options.callback or function() end
+    local default = options.Default or false  -- Read the default state
+
+    local toggled = default  -- Set the initial state based on the default option
+
+    if flag then
+        library.flags[flag] = toggled
+    end
+
+    callback(toggled)
+
+    local toggle = HBPUI.create("TextButton", {
+        Size = UDim2.new(1, 0, 0, 16),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(0, 0, 0),
+        Font = Enum.Font.SourceSans,
+        Parent = sectionContent
+    })
+
+    local icon = HBPUI.create("Frame", {
+        ZIndex = 3,
+        Size = UDim2.new(0, 14, 1, -2),
+        BorderColor3 = Color3.fromRGB(155, 73, 222),
+        Position = UDim2.new(0, 0, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+        Parent = toggle
+    })
+
+    local iconGradient = HBPUI.create("UIGradient", {
+        Rotation = 90,
+        Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 33, 33)), 
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+        },
+        Parent = icon
+    })
+
+    local title = HBPUI.create("TextLabel", {
+        ZIndex = 3,
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, 7, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+        FontSize = Enum.FontSize.Size14,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(181, 181, 181),
+        Text = name,
+        Font = Enum.Font.Fantasy,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = icon
+    })
+
+    local function updateVisuals()
+        local textColor = toggled and Color3.fromRGB(254, 254, 254) or Color3.fromRGB(181, 181, 181)
+        local gradientColor
+
+        if toggled then
+            gradientColor = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, library.color), 
+                ColorSequenceKeypoint.new(1, HBPUI.change_color(library.color, -47))
+            }
+            table.insert(coloredGradients, iconGradient)
+        else
+            gradientColor = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 33, 33)), 
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+            }
+            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
+        end
+
+        iconGradient.Color = gradientColor
+        title.TextColor3 = textColor
+    end
+
+    local function toggleToggle()
+        toggled = not toggled
+        updateVisuals()  -- Call to update visuals when toggled
+
+        if flag then
+            library.flags[flag] = toggled
+        end
+
+        callback(toggled)
+    end
+
+    toggle.MouseButton1Click:Connect(toggleToggle)
+
+    -- Initialize toggle visuals if default is true
+    if default then
+        updateVisuals()  -- Call this to apply the visual changes for being toggled on
+    end
+
+    local toggleTypes = HBPUI.table()
+
+    function toggleTypes:Show()
+        toggle.Visible = true
+    end
+
+    function toggleTypes:Hide()
+        toggle.Visible = false
+    end
+
+    function toggleTypes:SetName(str)
+        title.Text = str
+    end
+
+    function toggleTypes:Toggle(bool)
+        if toggled ~= bool then
+            toggleToggle()
+        end
+    end
+
+    if flag then
+        flags.toggles[flag] = function(bool)
+            if toggled ~= bool then
+                toggleToggle()
+            end
+        end
+    end
+
+    return toggleTypes
+end
+
+
+
+				--Slider              
+				function sectionTypes:Slider(opts)
+					local options = HBPUI.table(opts)
+					local min = options.min or 0
+					local max = options.max or 100
+					local valueText = options.valueText or "Slider: [VALUE]/" .. tostring(max)
+					local default = options.default or math.clamp(0, min, max)
+					local decimals = options.decimals or 0.1
+					local flag = options.flag
+					local callback = options.callback or function() end
+
+
+					decimals = math.floor(10^decimals)
+
+
+					if flag then
+						library.flags[flag] = default
+					end
+
+
+					callback(default)
+
+
+					local value = default
+
+
+					local sliding = false
+
+
+					local slider = HBPUI.create("Frame", {
+						ZIndex = 3,
+						Size = UDim2.new(1, 0, 0, 16),
+						BorderColor3 = Color3.fromRGB(155, 73, 222),
+						Position = UDim2.new(0, 0, 1, -13),
+						BackgroundColor3 = Color3.fromRGB(155, 73, 222),
+						Parent = sectionContent
+					})
+
+					local fill = HBPUI.create("Frame", {
+						ZIndex = 4,
+						Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+						BorderSizePixel = 0,
+						BackgroundColor3 = Color3.fromRGB(141, 7, 139),
+						Parent = slider
+					})
+
+					local fillGradient = HBPUI.create("UIGradient", {
+						Rotation = 90,
+						Color = ColorSequence.new{
+							ColorSequenceKeypoint.new(0, library.color), 
+							ColorSequenceKeypoint.new(1, HBPUI.change_color(library.color, -47))
+						},
+						Parent = fill
+					})
+
+
+					table.insert(coloredGradients, fillGradient)
+
+					HBPUI.create("UIGradient", {
+						Rotation = 90,
+						Color = ColorSequence.new{
+							ColorSequenceKeypoint.new(0, Color3.fromRGB(33, 33, 33)), 
+							ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+						},
+						Parent = slider
+					})
+
+
+					local title = HBPUI.create("TextLabel", {
+						ZIndex = 5,
+						Size = UDim2.new(1, 0, 1, 0),
+						BackgroundTransparency = 1,
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						FontSize = Enum.FontSize.Size12,
+						TextSize = 12,
+						TextColor3 = Color3.fromRGB(254, 254, 254),
+						Text = valueText:gsub("%[VALUE%]", tostring(default)),
+						Font = Enum.Font.Fantasy,
+						Parent = slider
+					})
+
+
+					local function slide(input)
+						local sizeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+						fill.Size = UDim2.new(sizeX, 0, 1, 0)
+
+
+						value = math.floor((((max - min) * sizeX) + min) * decimals) / decimals
+						title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+
+
+						if flag then 
+							library.flags[flag] = value
+						end
+
+
+						callback(value)
+					end
+
+
+					slider.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							sliding = true
+							slide(input)
+						end
+					end)
+
+
+					slider.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							sliding = false
+						end
+					end)
+
+
+					ibs.InputChanged:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseMovement then
+							if sliding then
+								slide(input)
+							end
+						end
+					end)
+
+
+					local sliderTypes = HBPUI.table()
+
+
+					function sliderTypes:Show()
+						slider.Visible = true
+					end
+
+
+					function sliderTypes:Hide()
+						slider.Visible = false
+					end
+
+
+					function sliderTypes:SetValueText(str)
+						valueText = str
+						title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+					end
+
+
+					function sliderTypes:Set(num)
+						num = math.floor(math.clamp(num, min, max) * decimals) / decimals
+						value = num
+						fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+
+						if flag then 
+							library.flags[flag] = value
+						end
+
+
+						callback(value)
+					end
+
+
+					function sliderTypes:SetMin(num)
+						min = num
+						value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+						fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+
+
+						if flag then 
+							library.flags[flag] = value
+						end
+
+
+						callback(value)
+					end
+
+
+					function sliderTypes:SetMax(num)
+						max = num
+						value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+						fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+
+
+						if flag then 
+							library.flags[flag] = value
+						end
+
+
+						callback(value)
+					end
+
+
+					if flag then
+						flags.sliders[flag] = function(num)
+							sliderTypes:Set(num)
+						end
+					end
+
+
+					return sliderTypes
+				end
+				--ToggleSlider
+				
+
+				--KeyBind
+				function sectionTypes:Keybind(opts)
+					local options = HBPUI.table(opts)
+					local name = options.name or "Keybind"
+					local default = options.default
+					local blacklist = options.blacklist or {}
+					local flag = options.flag
+					local callback = options.callback or function() end
+
+
+					if flag then
+						library.flags[flag] = default
+					end
+
+
+					local keys = {
+						[Enum.KeyCode.LeftShift] = "Left Shift";
+						[Enum.KeyCode.RightShift] = "Right Shift";
+						[Enum.KeyCode.LeftControl] = "Left Ctrl";
+						[Enum.KeyCode.RightControl] = "Right Ctrl";
+						[Enum.KeyCode.LeftAlt] = "Left Alt";
+						[Enum.KeyCode.RightAlt] = "Right Alt";
+						[Enum.KeyCode.CapsLock] = "CapsLock";
+						[Enum.KeyCode.One] = "1";
+						[Enum.KeyCode.Two] = "2";
+						[Enum.KeyCode.Three] = "3";
+						[Enum.KeyCode.Four] = "4";
+						[Enum.KeyCode.Five] = "5";
+						[Enum.KeyCode.Six] = "6";
+						[Enum.KeyCode.Seven] = "7";
+						[Enum.KeyCode.Eight] = "8";
+						[Enum.KeyCode.Nine] = "9";
+						[Enum.KeyCode.Zero] = "0";
+						[Enum.KeyCode.KeypadOne] = "Num 1";
+						[Enum.KeyCode.KeypadTwo] = "Num 2";
+						[Enum.KeyCode.KeypadThree] = "Num 3";
+						[Enum.KeyCode.KeypadFour] = "Num 4";
+						[Enum.KeyCode.KeypadFive] = "Num 5";
+						[Enum.KeyCode.KeypadSix] = "Num 6";
+						[Enum.KeyCode.KeypadSeven] = "Num 7";
+						[Enum.KeyCode.KeypadEight] = "Num 8";
+						[Enum.KeyCode.KeypadNine] = "Num 9";
+						[Enum.KeyCode.KeypadZero] = "Num 0";
+						[Enum.KeyCode.Minus] = "-";
+						[Enum.KeyCode.Equals] = "=";
+						[Enum.KeyCode.Tilde] = "~";
+						[Enum.KeyCode.LeftBracket] = "[";
+						[Enum.KeyCode.RightBracket] = "]";
+						[Enum.KeyCode.RightParenthesis] = ")";
+						[Enum.KeyCode.LeftParenthesis] = "(";
+						[Enum.KeyCode.Semicolon] = ";";
+						[Enum.KeyCode.Quote] = "'";
+						[Enum.KeyCode.BackSlash] = "\\";
+						[Enum.KeyCode.Comma] = ";";
+						[Enum.KeyCode.Period] = ".";
+						[Enum.KeyCode.Slash] = "/";
+						[Enum.KeyCode.Asterisk] = "*";
+						[Enum.KeyCode.Plus] = "+";
+						[Enum.KeyCode.Period] = ".";
+						[Enum.KeyCode.Backquote] = "`";
+						[Enum.UserInputType.MouseButton1] = "Mouse 1";
+						[Enum.UserInputType.MouseButton2] = "Mouse 2";
+						[Enum.UserInputType.MouseButton3] = "Mouse 3"
+					}
+
+
+					local keyChosen = default
+
+
+					local keybind = HBPUI.create("TextButton", {
+						Size = UDim2.new(1, 0, 0, 16),
+						BackgroundTransparency = 1,
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 14,
+						TextColor3 = Color3.fromRGB(0, 0, 0),
+						Font = Enum.Font.SourceSans,
+						Parent = sectionContent
+					})
+
+					local title = HBPUI.create("TextLabel", {
+						ZIndex = 3,
+						Size = UDim2.new(0, 0, 1, 0),
+						BackgroundTransparency = 1,
+						BackgroundColor3 = Color3.fromRGB(254, 254, 254),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 13,
+						TextColor3 = Color3.fromRGB(254, 254, 254),
+						Text = name,
+						Font = Enum.Font.Fantasy,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						Parent = keybind
+					})
+
+					local value = HBPUI.create("TextLabel", {
+						ZIndex = 3,
+						Size = UDim2.new(0, 0, 1, 0),
+						BackgroundTransparency = 1,
+						Position = UDim2.new(1, 0, 0, 0),
+						FontSize = Enum.FontSize.Size14,
+						TextSize = 13,
+						TextColor3 = Color3.fromRGB(181, 181, 181),
+						Text = default and (keys[default] or tostring(default):gsub("Enum.KeyCode.", "")) or "NONE",
+						Font = Enum.Font.Fantasy,
+						TextXAlignment = Enum.TextXAlignment.Right,
+						Parent = keybind
+					})
+
+
+					keybind.MouseButton1Click:Connect(function()
+						value.Text = "..."
+						value.TextColor3 = Color3.fromRGB(254, 254, 254)
+
+
+						local binding
+						binding = ibs.InputBegan:Connect(function(input)
+							local key = keys[input.KeyCode] or keys[input.UserInputType]
+							value.Text = (keys[key] or tostring(input.KeyCode):gsub("Enum.KeyCode.", ""))
+							value.TextColor3 = Color3.fromRGB(181, 181, 181)
+
+
+							if input.UserInputType == Enum.UserInputType.Keyboard then
+								if not table.find(blacklist, input.KeyCode) then
+									keyChosen = input.KeyCode
+
+
+									if flag then
+										library.flags[flag] = input.KeyCode
+									end
+
+
+									binding:Disconnect()
+								else
+									keyChosen = nil
+									value.TextColor3 = Color3.fromRGB(181, 181, 181)
+									value.Text = "NONE"
+
+									if flag then
+										library.flags[flag] = nil
+									end
+
+
+									binding:Disconnect()
+								end
+							else
+								if not table.find(blacklist, input.UserInputType) then
+									keyChosen = input.UserInputType
+
+
+									if flag then
+										library.flags[flag] = input.UserInputType
+									end
+
+
+									binding:Disconnect()
+								else
+									keyChosen = nil
+									value.TextColor3 = Color3.fromRGB(181, 181, 181)
+									value.Text = "NONE"
+
+									if flag then
+										library.flags[flag] = nil
+									end
+
+
+									binding:Disconnect()
+								end
+							end
+						end)
+					end)
+
+
+					ibs.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.Keyboard then
+							if input.KeyCode == keyChosen then
+								callback(keyChosen)
+							end
+						else
+							if input.UserInputType == keyChosen then
+								callback(keyChosen)
+							end
+						end
+					end)
+
+
+					local keybindTypes = HBPUI.table()
+
+
+					function keybindTypes:Show()
+						keybind.Visible = true
+					end
+
+
+					function keybindTypes:Hide()
+						keybind.Visible = false
+					end
+
+
+					function keybindTypes:SetName(str)
+						title.Text = str
+					end
+
+
+					function keybindTypes:Set(newKey)
+						if typeof(newKey) == "EnumItem" then
+							if not table.find(blacklist, newKey) then
+								local key = keys[newKey]
+								value.Text = (keys[key] or tostring(newKey):gsub("Enum.KeyCode.", ""))
+								value.TextColor3 = Color3.fromRGB(181, 181, 181)
+
+								keyChosen = newKey
+
+								if flag then
+									library.flags[flag] = newKey
+								end
+							else
+								keyChosen = nil
+								value.TextColor3 = Color3.fromRGB(181, 181, 181)
+								value.Text = "NONE"
+
+
+								if flag then
+									library.flags[flag] = nil
+								end
+							end
+						end
+					end
+
+
+					if flag then
+						flags.keybinds[flag] = function(key)
+							keybindTypes:Set(key)
+						end
+					end
+
+
+					return keybindTypes
+				end
+
+				--ToggleKeybind
+				
+					
+
+				--ColorPicker
+				
+
+				
+
+
+				return sectionTypes
+			end
+
+
+			return tabTypes
+		end
+
+
+		return windowTypes
+	end
+
+
+	return library
+end
+
+
+
+
