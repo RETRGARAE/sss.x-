@@ -98,14 +98,10 @@ function Init()
 	end
 
 
-	function HBPUI.hex_to_rgb(hex)
-		return Color3.fromRGB(tonumber("0x" .. hex:sub(2, 3)), tonumber("0x" .. hex:sub(4, 5)), tonumber("0x"..hex:sub(6, 7)))
-	end
 
 
-	function HBPUI.rgb_to_hex(color)
-		return string.format("#%02X%02X%02X", math.clamp(color.R * 255, 0, 255), math.clamp(color.G * 255, 0, 255), math.clamp(color.B * 255, 0, 255))
-	end
+
+	
 
 	function HBPUI.table(tbl)
 		local oldtbl = tbl or {}
@@ -166,27 +162,7 @@ function Init()
 
 	gui.Parent = cg
 
-	local flags = {toggles = {}, sliders = {}, keybinds = {}
-
-	function library:LoadConfig(file)
-		local str = readfile(ConfigUI .. "/" .. file .. ".cfg")
-		local tbl = loadstring(str)()
-
-		for flag, value in next, tbl.toggles do
-			flags.toggles[flag](value)
-		end
-
-		for flag, value in next, tbl.sliders do
-			flags.sliders[flag](value)
-		end
-
-		for flag, value in next, tbl.keybinds do
-			flags.keybinds[flag](value)
-		end
-
-
-		
-	end
+	
 
 
 
@@ -1234,7 +1210,3 @@ end
 
 	return library
 end
-
-
-
-
