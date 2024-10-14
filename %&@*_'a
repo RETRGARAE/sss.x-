@@ -166,7 +166,7 @@ function Init()
 
 	gui.Parent = cg
 
-	local flags = {toggles = {}, sliders = {}, keybinds = {}, colorpickers = {}}
+	local flags = {toggles = {}, sliders = {}, keybinds = {}
 
 	function library:LoadConfig(file)
 		local str = readfile(ConfigUI .. "/" .. file .. ".cfg")
@@ -185,9 +185,7 @@ function Init()
 		end
 
 
-		for flag, value in next, tbl.colorpickers do
-			flags.colorpickers[flag](value)
-		end
+		
 	end
 
 
