@@ -162,7 +162,7 @@ function Init()
 
 	gui.Parent = cg
 
-	
+	local flags = {toggles = {}, sliders = {}, keybinds = {}}
 
 
 
